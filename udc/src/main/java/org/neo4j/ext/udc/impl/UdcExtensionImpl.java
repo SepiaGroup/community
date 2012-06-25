@@ -78,10 +78,8 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
         if(timer != null) {
             timer.cancel();
         }
-        
-        Map<String, String> conf = loadSystemProperties();
-        conf.putAll( kernel.getConfigParams());
-        Config config = new Config( conf );
+
+        Config config = loadConfig(kernel);
 
         if ( !config.getBoolean( UdcSettings.udc_enabled )) return null;
 
@@ -107,6 +105,15 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
         return task;
     }
 
+    private Config loadConfig(KernelData kernel) {
+        Properties udcProps = loadUdcProperties();
+        HashMap<String, String> config = new HashMap<String, String>(kernel.getConfigParams());
+        for (Map.Entry<Object, Object> entry : udcProps.entrySet()) {
+            config.put((String)entry.getKey(), (String) entry.getValue());
+        }
+        return new Config( config );
+    }
+
     private Integer determineClusterNameHash(Config config) {
         try {
             Class<?> haSettings = Class.forName("org.neo4j.kernel.ha.HaSettings");
@@ -120,7 +127,7 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
 
     private Edition determineEdition(String classPath) {
         if (classPath.contains("neo4j-ha")) return Edition.enterprise;
-        if (classPath.contains("neo4j-jmx")) return Edition.advanced;
+        if (classPath.contains("neo4j-management")) return Edition.advanced;
         return Edition.community;
     }
 
@@ -157,27 +164,21 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask>
         }
     }
 
-    private Map<String,String> loadSystemProperties()
+    private Properties loadUdcProperties()
     {
         Properties sysProps = new Properties( );
-        HashMap<String, String> stringStringHashMap = new HashMap<String, String>();
         try
         {
             InputStream resource = getClass().getResourceAsStream( "/org/neo4j/ext/udc/udc.properties" );
-            if ( resource != null )
-            {
-                sysProps.load( resource );
-                for( Map.Entry<Object, Object> objectObjectEntry : sysProps.entrySet() )
-                {
-                    stringStringHashMap.put( objectObjectEntry.getKey().toString(), objectObjectEntry.getValue().toString() );
-                }
+            if (resource != null) {
+                sysProps.load(resource);
             }
         }
         catch ( Exception e )
         {
             System.err.println( "failed to load udc.properties, because: " + e );
         }
-        return stringStringHashMap;
+        return sysProps;
     }
 
     private String formattedMacAddy() {

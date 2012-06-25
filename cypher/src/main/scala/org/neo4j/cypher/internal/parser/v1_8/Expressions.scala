@@ -66,8 +66,46 @@ trait Expressions extends Base with ParserPattern with Predicates {
       | parens(expression)
       | failure("illegal start of value"))
 
+  def stringLit: Parser[Expression] = Parser {
+    case in if in.atEnd => Failure("out of string", in)
+    case in =>
+      val start = handleWhiteSpace(in.source, in.offset)
+      val string = in.source.subSequence(start, in.source.length()).toString
+      val startChar = string.charAt(0)
+      if (startChar != '\"' && startChar != '\'')
+        Failure("expected string", in)
+      else {
 
-  def stringLit: Parser[Expression] = string ^^ (x => Literal(x))
+        var ls = string.toList.tail
+        val sb = new StringBuilder(ls.length)
+        var idx = start
+        var result: Option[ParseResult[Expression]] = None
+
+        while (!ls.isEmpty && result.isEmpty) {
+          val (pref, suf) = ls span { c => c != '\\' && c != startChar }
+          idx += pref.length
+          sb ++= pref
+
+          if (suf.isEmpty)
+            result = Some(Failure("end of string missing", in))
+
+          val first: Char = suf(0)
+          first match {
+            case c if c == startChar         =>
+              result = Some(Success(Literal(sb.result()), in.drop(idx - in.offset + 2)))
+            case '\\' if suf(1) == '\''||suf(1)=='\"' =>
+              sb.append(suf(1))
+              idx += 2
+              ls = suf.drop(2)
+          }
+        }
+
+        result match {
+          case Some(x) => x
+          case None    => Failure("end of string missing", in)
+        }
+      }
+  }
 
   def numberLiteral: Parser[Expression] = number ^^ (x => {
     val value: Any = if (x.contains("."))
@@ -181,13 +219,12 @@ trait Expressions extends Base with ParserPattern with Predicates {
   }
 
   private def translate(abstractPattern: AbstractPattern): Maybe[Pattern] = matchTranslator(abstractPattern) match {
-    case Yes(x: NamedPath) => No("Can't assign to an identifier in a pattern expression")
-    case Yes(pattern: Pattern) => Yes(pattern)
-    case n: No => n
-  }
+      case Yes(Seq(np)) if np.isInstanceOf[NamedPath] => No(Seq("Can't assign to an identifier in a pattern expression"))
+      case Yes(p@Seq(pattern:Pattern)) => Yes(p.asInstanceOf[Seq[Pattern]])
+      case n: No => n
+    }
 
   def matchTranslator(abstractPattern: AbstractPattern): Maybe[Any]
-
 }
 
 trait DefaultTrue

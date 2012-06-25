@@ -47,7 +47,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -169,7 +168,7 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
     }
 
     @Test
-    public void shouldGet404WhenRequestingIndexUriWhichDoesntExist() throws DatabaseBlockedException
+    public void shouldGet404WhenRequestingIndexUriWhichDoesntExist()
     {
         String key = "key3";
         String value = "value";
@@ -180,7 +179,7 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
     }
 
     @Test
-    public void shouldGet404WhenDeletingNonExtistentIndex() throws DatabaseBlockedException
+    public void shouldGet404WhenDeletingNonExtistentIndex()
     {
         String indexName = "nosuchindex";
         String indexUri = functionalTestHelper.relationshipIndexUri() + indexName;
@@ -289,7 +288,7 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
     }
 
     @Test
-    public void shouldBeAbleToRemoveIndexing() throws DatabaseBlockedException, JsonParseException
+    public void shouldBeAbleToRemoveIndexing() throws JsonParseException
     {
         String key1 = "kvkey1";
         String key2 = "kvkey2";
